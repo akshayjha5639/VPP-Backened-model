@@ -181,7 +181,7 @@ def get_peak_sun_hours(lat, lon):
     response = requests.get(url)
 
     data = response.json()
-
+    print(data)
     times = data['hourly']['time']
     radiation = data['hourly']['shortwave_radiation']
 
