@@ -98,9 +98,7 @@ def fetch_building_footprint(
 
     except Exception:
 
-        raise Exception(
-            "No building detected at this location."
-        )
+        return {"error" :"No building detected at this location."}
 
     # ------------------------------------
     # CHECK EMPTY
