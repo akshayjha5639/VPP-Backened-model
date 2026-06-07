@@ -19,7 +19,8 @@ app = FastAPI(
 
 class PropertyRequest(BaseModel):
 
-    address: str
+    latitude : float
+    longitude : float
 
 
 # =====================================================
@@ -31,7 +32,7 @@ class PropertyRequest(BaseModel):
 def analyze(request: PropertyRequest):
 
     result = analyze_property(
-        request.address
+        request.latitude,request.longitude
     )
 
     return result
