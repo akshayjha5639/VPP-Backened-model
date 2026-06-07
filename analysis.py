@@ -115,8 +115,25 @@ def fetch_building_footprint(
     return {
     "geometry": largest.geometry,
     "building": largest.get("building", "unknown"),
-    "name": largest.get("name", "unknown"),
-    "levels": largest.get("building:levels", 1)
+    "name":
+        (
+            largest.get("name")
+            if pd.notna(
+                largest.get("name")
+            )
+            else "Unknown"
+        ),
+
+    "levels":
+        (
+            largest.get("building:levels")
+            if pd.notna(
+                largest.get(
+                    "building:levels"
+                )
+            )
+            else 1
+        )
     }
 
 
