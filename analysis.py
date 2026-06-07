@@ -91,14 +91,13 @@ def fetch_building_footprint(
 
         tags=tags,
 
-        dist=100
+        dist=500
     )
 
     except Exception:
-
-        raise Exception(
-        "No building detected at this location."
-    )
+        if(gdf.empty):
+            return {"error" :"No building detected at this location."}
+    
 
     # Keep polygons only
     gdf = gdf[
@@ -640,7 +639,8 @@ def analyze_property(
         lat,
         lon
     )
-
+    if("error" in building_data):
+        return building_data
     geometry = building_data["geometry"]
 
     building_type = building_data["building"]
