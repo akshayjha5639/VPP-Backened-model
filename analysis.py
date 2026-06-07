@@ -51,24 +51,24 @@ STANDARD_VALUES = {
 # 1. GEOCODING ENGINE
 # =========================================================
 
-def get_coordinates(address):
+# def get_coordinates(address):
 
-    geolocator = Nominatim(
-        user_agent="vpp-platform"
-    )
+#     geolocator = Nominatim(
+#         user_agent="vpp-platform"
+#     )
 
-    location = geolocator.geocode(address)
+#     location = geolocator.geocode(address)
 
-    if not location:
+#     if not location:
 
-        raise Exception(
-            "Address not found."
-        )
+#         raise Exception(
+#             "Address not found."
+#         )
 
-    return (
-        location.latitude,
-        location.longitude
-    )
+#     return (
+#         location.latitude,
+#         location.longitude
+#     )
 
 
 # =========================================================
@@ -593,16 +593,16 @@ def calculate_vpp_score(
 # =========================================================
 
 def analyze_property(
-    address
+    lat,lon
 ):
 
     # =====================================================
     # 1. GEOCODING
     # =====================================================
 
-    lat, lon = get_coordinates(
-        address
-    )
+    # lat, lon = get_coordinates(
+    #     address
+    # )
 
     # =====================================================
     # 2. BUILDING FOOTPRINT
@@ -696,9 +696,6 @@ def analyze_property(
     # =====================================================
 
     return {
-
-        "address":
-            address,
 
         "coordinates": {
 
