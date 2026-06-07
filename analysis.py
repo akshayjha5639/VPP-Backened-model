@@ -83,20 +83,33 @@ def fetch_building_footprint(
     # Search around coordinate
     tags = {"building": True}
 
+    
+
     try:
 
         gdf = ox.features_from_point(
 
-        (latitude, longitude),
+            (latitude, longitude),
 
-        tags=tags,
+            tags=tags,
 
-        dist=500
-    )
+            dist=300
+        )
 
     except Exception:
-        if(gdf.empty):
-            return {"error" :"No building detected at this location."}
+
+        raise Exception(
+            "No building detected at this location."
+        )
+
+    # ------------------------------------
+    # CHECK EMPTY
+    # ------------------------------------
+
+
+    
+    if(gdf.empty):
+        return {"error" :"No building detected at this location."}
     
 
     # Keep polygons only
