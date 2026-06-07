@@ -11,7 +11,14 @@ from analysis import analyze_property
 app = FastAPI(
     title="AI VPP Property Intelligence API"
 )
+from fastapi.middleware.cors import CORSMiddleware
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],        # baad me apne frontend ka URL daal dena
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # =====================================================
 # REQUEST MODEL
