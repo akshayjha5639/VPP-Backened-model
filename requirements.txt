@@ -9,5 +9,4 @@ geopandas
 shapely
 pyproj
 
-geopy
 requests
