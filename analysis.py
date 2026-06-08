@@ -11,7 +11,7 @@
 import osmnx as ox
 import geopandas as gpd
 from shapely.geometry import Polygon
-from geopy.geocoders import Nominatim
+# from geopy.geocoders import Nominatim
 import requests
 import pandas as pd
 import numpy as np
@@ -245,100 +245,153 @@ def calculate_area_sqm(
 
 
 
-def get_peak_sun_hours(lat, lon):
+# def get_peak_sun_hours(lat, lon):
 
-    # -----------------------------
-    # 1. TRY OPEN-METEO FIRST
-    # -----------------------------
-    try:
-        url = (
-            f"https://api.open-meteo.com/v1/forecast"
-            f"?latitude={lat}"
-            f"&longitude={lon}"
-            f"&hourly=shortwave_radiation"
-            f"&forecast_days=7"
-        )
+#     # -----------------------------
+#     # 1. TRY OPEN-METEO FIRST
+#     # -----------------------------
+#     try:
+#         url = (
+#             f"https://api.open-meteo.com/v1/forecast"
+#             f"?latitude={lat}"
+#             f"&longitude={lon}"
+#             f"&hourly=shortwave_radiation"
+#             f"&forecast_days=7"
+#         )
 
-        response = requests.get(url, timeout=20)
+#         response = requests.get(url, timeout=20)
 
-        # Raise error if bad response
-        response.raise_for_status()
+#         # Raise error if bad response
+#         response.raise_for_status()
 
-        data = response.json()
+#         data = response.json()
 
-        # Validate response structure
-        if (
-            "hourly" not in data
-            or "time" not in data["hourly"]
-            or "shortwave_radiation" not in data["hourly"]
-        ):
-            raise ValueError("Invalid Open-Meteo response")
+#         # Validate response structure
+#         if (
+#             "hourly" not in data
+#             or "time" not in data["hourly"]
+#             or "shortwave_radiation" not in data["hourly"]
+#         ):
+#             raise ValueError("Invalid Open-Meteo response")
 
-        times = data["hourly"]["time"]
-        radiation = data["hourly"]["shortwave_radiation"]
+#         times = data["hourly"]["time"]
+#         radiation = data["hourly"]["shortwave_radiation"]
 
-        # Create dataframe
-        df = pd.DataFrame({
-            "time": pd.to_datetime(times),
-            "radiation": radiation
-        })
+#         # Create dataframe
+#         df = pd.DataFrame({
+#             "time": pd.to_datetime(times),
+#             "radiation": radiation
+#         })
 
-        # Extract date
-        df["date"] = df["time"].dt.date
+#         # Extract date
+#         df["date"] = df["time"].dt.date
 
-        # Daily radiation sum
-        daily_radiation = df.groupby("date")["radiation"].sum()
+#         # Daily radiation sum
+#         daily_radiation = df.groupby("date")["radiation"].sum()
 
-        # Convert Wh/m² → kWh/m²
-        daily_psh = daily_radiation / 1000
+#         # Convert Wh/m² → kWh/m²
+#         daily_psh = daily_radiation / 1000
 
-        # Average PSH
-        avg_psh = daily_psh.mean()
+#         # Average PSH
+#         avg_psh = daily_psh.mean()
 
-        print("Using Open-Meteo API")
+#         print("Using Open-Meteo API")
 
-        return round(avg_psh, 2)
+#         return round(avg_psh, 2)
 
-    except Exception as e:
+#     except Exception as e:
 
-        print(f"Open-Meteo failed: {e}")
-        print("Switching to PVGIS API...")
+#         print(f"Open-Meteo failed: {e}")
+#         print("Switching to PVGIS API...")
 
-    # -----------------------------
-    # 2. FALLBACK TO PVGIS API
-    # -----------------------------
-    try:
-        url = (
-            "https://re.jrc.ec.europa.eu/api/v5_2/seriescalc"
-            f"?lat={lat}"
-            f"&lon={lon}"
-            f"&outputformat=json"
-        )
+#     # -----------------------------
+#     # 2. FALLBACK TO PVGIS API
+#     # -----------------------------
+#     try:
+#         url = (
+#             "https://re.jrc.ec.europa.eu/api/v5_2/seriescalc"
+#             f"?lat={lat}"
+#             f"&lon={lon}"
+#             f"&outputformat=json"
+#         )
 
-        response = requests.get(url, timeout=20)
+#         response = requests.get(url, timeout=20)
 
-        response.raise_for_status()
+#         response.raise_for_status()
 
-        data = response.json()
+#         data = response.json()
 
-        hourly = data["outputs"]["hourly"]
+#         hourly = data["outputs"]["hourly"]
 
-        total = sum(h["G(i)"] for h in hourly)
+#         total = sum(h["G(i)"] for h in hourly)
 
-        days = len(set(h["time"][:8] for h in hourly))
+#         days = len(set(h["time"][:8] for h in hourly))
 
-        avg_psh = total / days / 1000
+#         avg_psh = total / days / 1000
 
-        print("Using PVGIS API")
+#         print("Using PVGIS API")
 
-        return round(avg_psh, 2)
+#         return round(avg_psh, 2)
 
-    except Exception as e:
+#     except Exception as e:
 
-        print(f"PVGIS also failed: {e}")
+#         print(f"PVGIS also failed: {e}")
 
-        return None
+#         return None
+def get_peak_sun_hours(
+    lat,
+    lon=None
+):
 
+    lat = abs(lat)
+
+    # =====================================
+    # VERY HIGH SOLAR REGIONS
+    # =====================================
+
+    if lat <= 15:
+
+        return 6.0
+
+    # =====================================
+    # HIGH SOLAR REGIONS
+    # =====================================
+
+    elif lat <= 25:
+
+        return 5.7
+
+    # =====================================
+    # GOOD SOLAR REGIONS
+    # =====================================
+
+    elif lat <= 35:
+
+        return 5.3
+
+    # =====================================
+    # MODERATE SOLAR REGIONS
+    # =====================================
+
+    elif lat <= 45:
+
+        return 4.8
+
+    # =====================================
+    # LOW SOLAR REGIONS
+    # =====================================
+
+    elif lat <= 55:
+
+        return 4.0
+
+    # =====================================
+    # VERY LOW SOLAR REGIONS
+    # =====================================
+
+    else:
+
+        return 3.2
 # =========================================================
 # 5. PROPERTY CLASSIFICATION
 # =========================================================
