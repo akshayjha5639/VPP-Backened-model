@@ -658,23 +658,118 @@ def estimate_revenue(
 # =========================================================
 
 def calculate_vpp_score(
+
+    property_type,
+
     solar_capacity_kw,
-    battery_mwh
+
+    battery_mwh,
+
+    peak_sun_hours,
+
+    annual_generation_kwh
 ):
 
-    score = 50
+    score = 0
 
-    if solar_capacity_kw > 1000:
+    # =====================================================
+    # 1. SOLAR CAPACITY SCORE
+    # =====================================================
 
-        score += 20
+    if solar_capacity_kw >= 5000:
 
-    if battery_mwh > 1:
+        score += 30
+
+    elif solar_capacity_kw >= 1000:
+
+        score += 22
+
+    elif solar_capacity_kw >= 300:
 
         score += 15
 
-    if solar_capacity_kw > 5000:
+    else:
+
+        score += 8
+
+    # =====================================================
+    # 2. BATTERY SCORE
+    # =====================================================
+
+    if battery_mwh >= 10:
+
+        score += 25
+
+    elif battery_mwh >= 3:
+
+        score += 18
+
+    elif battery_mwh >= 1:
+
+        score += 10
+
+    else:
+
+        score += 5
+
+    # =====================================================
+    # 3. SOLAR RESOURCE SCORE
+    # =====================================================
+
+    if peak_sun_hours >= 5.5:
 
         score += 15
+
+    elif peak_sun_hours >= 4.5:
+
+        score += 10
+
+    else:
+
+        score += 5
+
+    # =====================================================
+    # 4. PROPERTY TYPE SCORE
+    # =====================================================
+
+    preferred_properties = [
+
+        "Warehouse",
+
+        "Factory",
+
+        "Mall",
+
+        "Office"
+    ]
+
+    if property_type in preferred_properties:
+
+        score += 15
+
+    else:
+
+        score += 8
+
+    # =====================================================
+    # 5. ENERGY SCALE SCORE
+    # =====================================================
+
+    if annual_generation_kwh >= 10000000:
+
+        score += 15
+
+    elif annual_generation_kwh >= 3000000:
+
+        score += 10
+
+    else:
+
+        score += 5
+
+    # =====================================================
+    # NORMALIZE SCORE
+    # =====================================================
 
     return min(score, 100)
 
@@ -775,11 +870,16 @@ def analyze_property(
     # =====================================================
 
     vpp_score = calculate_vpp_score(
+        property_type,
         solar[
             'system_capacity_kw'
         ],
         battery[
             'battery_mwh'
+        ],
+        peak_sun_hours,
+        solar[
+            'annual_generation_kwh'
         ]
     )
 
