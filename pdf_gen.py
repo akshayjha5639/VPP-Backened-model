@@ -1,10 +1,10 @@
+
 from reportlab.platypus import (
 
     SimpleDocTemplate,
-
     Paragraph,
-
-    Spacer
+    Spacer,
+    PageBreak
 )
 
 from reportlab.lib.styles import (
@@ -37,32 +37,16 @@ def generate_pdf_report(
     elements = []
 
     # =====================================================
-    # EXTRACT DATA
+    # EXTRACT REPORT
     # =====================================================
 
-    property_data = (
-        analysis_result["property"]
-    )
+    report = analysis_result
 
-    solar = (
-        analysis_result["solar"]
-    )
+    vpp = analysis_result["vpp_analysis"]
 
-    battery = (
-        analysis_result["battery"]
-    )
-
-    revenue = (
-        analysis_result["revenue"]
-    )
-
-    vpp = (
-        analysis_result["vpp_analysis"]
-    )
-
-    report = (
-        analysis_result["Report"]
-    )
+    recommendations = analysis_result[
+        "recommendations"
+    ]
 
     # =====================================================
     # TITLE
@@ -72,7 +56,7 @@ def generate_pdf_report(
 
         "AI VPP Property Intelligence Report",
 
-        styles['Title']
+        styles["Title"]
     )
 
     elements.append(title)
@@ -85,19 +69,24 @@ def generate_pdf_report(
     # EXECUTIVE SUMMARY
     # =====================================================
 
-    summary = Paragraph(
+    executive = report[
+        "executive_summary"
+    ]["summary"]
 
-        f"""
-        <b>Executive Summary</b>
-        <br/><br/>
+    elements.append(
 
-        {report['executive_summary']}
-        """,
+        Paragraph(
 
-        styles['BodyText']
+            f"""
+            <b>Executive Summary</b>
+            <br/><br/>
+
+            {executive.replace(chr(10), "<br/>")}
+            """,
+
+            styles["BodyText"]
+        )
     )
-
-    elements.append(summary)
 
     elements.append(
         Spacer(1, 20)
@@ -107,43 +96,30 @@ def generate_pdf_report(
     # PROPERTY SECTION
     # =====================================================
 
+    property_section = report["property"]
+
     property_text = f"""
 
     <b>Property Analysis</b>
     <br/><br/>
 
+    {property_section['insights']['property_comment']}
+    <br/><br/>
+
     <b>Property Type:</b>
-    {property_data['property_type']}
+    {property_section['classification']['property_type']}
     <br/><br/>
 
     <b>Roof Area:</b>
-    {property_data['roof_area_sqm']} sqm
-    <br/><br/>
-
-    <b>Building Type:</b>
-    {property_data['building_type']}
-    <br/><br/>
-
-    <b>Building Name:</b>
-    {property_data['building_name']}
-    <br/><br/>
-
-    <b>Building Levels:</b>
-    {property_data['levels']}
+    {property_section['classification']['roof_area_sqm']} sqm
     <br/><br/>
 
     <b>Estimated Daily Consumption:</b>
-    {
-        report['property_insights']
-        ['estimated_daily_consumption_kwh']
-    } kWh
+    {property_section['energy_profile']['estimated_daily_consumption_kwh']} kWh
     <br/><br/>
 
-    <b>Consumption Methodology:</b>
-    {
-        report['property_insights']
-        ['consumption_methodology']
-    }
+    <b>Estimated Monthly Consumption:</b>
+    {property_section['energy_profile']['estimated_monthly_consumption_kwh']} kWh
     """
 
     elements.append(
@@ -152,7 +128,7 @@ def generate_pdf_report(
 
             property_text,
 
-            styles['BodyText']
+            styles["BodyText"]
         )
     )
 
@@ -164,57 +140,23 @@ def generate_pdf_report(
     # SOLAR SECTION
     # =====================================================
 
+    solar = report["solar"]
+
     solar_text = f"""
 
-    <b>Solar Feasibility Analysis</b>
+    <b>Solar Analysis</b>
     <br/><br/>
 
-    <b>Peak Sun Hours:</b>
-    {
-        report['solar_insights']
-        ['peak_sun_hours']
-    }
+    {solar['technical'].replace(chr(10), "<br/>")}
     <br/><br/>
 
-    <b>Usable Rooftop Area:</b>
-    {solar['usable_area_sqm']} sqm
+    {solar['generation'].replace(chr(10), "<br/>")}
     <br/><br/>
 
-    <b>Estimated Solar Capacity:</b>
-    {solar['system_capacity_kw']} kW
+    {solar['performance']['performance_summary'].replace(chr(10), "<br/>")}
     <br/><br/>
 
-    <b>Estimated Panel Count:</b>
-    {solar['panel_count']}
-    <br/><br/>
-
-    <b>Daily Energy Generation:</b>
-    {solar['daily_generation_kwh']} kWh
-    <br/><br/>
-
-    <b>Annual Energy Generation:</b>
-    {solar['annual_generation_kwh']} kWh
-    <br/><br/>
-
-    <b>Homes Powered Equivalent:</b>
-    {
-        report['solar_insights']
-        ['homes_powered_equivalent']
-    }
-    <br/><br/>
-
-    <b>EV Charging Equivalent:</b>
-    {
-        report['solar_insights']
-        ['ev_charging_equivalent']
-    }
-    <br/><br/>
-
-    <b>Solar Insights:</b>
-    {
-        report['solar_insights']
-        ['solar_comment']
-    }
+    {solar['insights']['strategic_summary'].replace(chr(10), "<br/>")}
     """
 
     elements.append(
@@ -223,7 +165,7 @@ def generate_pdf_report(
 
             solar_text,
 
-            styles['BodyText']
+            styles["BodyText"]
         )
     )
 
@@ -235,24 +177,23 @@ def generate_pdf_report(
     # BATTERY SECTION
     # =====================================================
 
+    battery = report["battery"]
+
     battery_text = f"""
 
-    <b>Battery Storage Analysis</b>
+    <b>Battery Analysis</b>
     <br/><br/>
 
-    <b>Battery Capacity:</b>
-    {battery['battery_mwh']} MWh
+    {battery['storage']['storage_summary'].replace(chr(10), "<br/>")}
     <br/><br/>
 
-    <b>Battery Size:</b>
-    {battery['battery_kwh']} kWh
+    {battery['applications']['applications_summary'].replace(chr(10), "<br/>")}
     <br/><br/>
 
-    <b>Battery Insights:</b>
-    {
-        report['battery_insights']
-        ['battery_comment']
-    }
+    {battery['performance']['performance_summary'].replace(chr(10), "<br/>")}
+    <br/><br/>
+
+    {battery['insights']['strategic_summary'].replace(chr(10), "<br/>")}
     """
 
     elements.append(
@@ -261,7 +202,7 @@ def generate_pdf_report(
 
             battery_text,
 
-            styles['BodyText']
+            styles["BodyText"]
         )
     )
 
@@ -273,27 +214,20 @@ def generate_pdf_report(
     # FINANCIAL SECTION
     # =====================================================
 
+    financial = report["financial"]
+
     financial_text = f"""
 
     <b>Financial Analysis</b>
     <br/><br/>
 
-    <b>Annual Savings:</b>
-    ${revenue['annual_savings_usd']}
+    {financial['economics']['economics_summary'].replace(chr(10), "<br/>")}
     <br/><br/>
 
-    <b>Estimated ROI:</b>
-    {
-        report['financial_insights']
-        ['estimated_roi_years']
-    } years
+    {financial['savings']['savings_summary'].replace(chr(10), "<br/>")}
     <br/><br/>
 
-    <b>Financial Insights:</b>
-    {
-        report['financial_insights']
-        ['financial_comment']
-    }
+    {financial['insights']['strategic_summary'].replace(chr(10), "<br/>")}
     """
 
     elements.append(
@@ -302,7 +236,7 @@ def generate_pdf_report(
 
             financial_text,
 
-            styles['BodyText']
+            styles["BodyText"]
         )
     )
 
@@ -310,61 +244,21 @@ def generate_pdf_report(
         Spacer(1, 20)
     )
 
-    # =====================================================
-    # ENVIRONMENT SECTION
-    # =====================================================
-
-    environment_text = f"""
-
-    <b>Environmental Impact</b>
-    <br/><br/>
-
-    <b>Carbon Savings:</b>
-    {revenue['carbon_savings_tons']} tons/year
-    <br/><br/>
-
-    <b>Equivalent Trees Planted:</b>
-    {
-        report['environmental_insights']
-        ['tree_equivalent']
-    }
-    <br/><br/>
-
-    <b>Environmental Insights:</b>
-    {
-        report['environmental_insights']
-        ['environment_comment']
-    }
-    """
-
-    elements.append(
-
-        Paragraph(
-
-            environment_text,
-
-            styles['BodyText']
-        )
-    )
-
-    elements.append(
-        Spacer(1, 20)
-    )
-
+    
     # =====================================================
     # VPP SECTION
     # =====================================================
 
-    services = ", ".join(
+    services = "<br/>• ".join(
         vpp["grid_services"]
     )
 
-    strengths = "<br/>".join(
+    strengths = "<br/>• ".join(
         vpp["strengths"]
     )
 
-    recommendations = "<br/>".join(
-        vpp["recommendations"]
+    risks = "<br/>• ".join(
+        vpp["risks"]
     )
 
     vpp_text = f"""
@@ -384,19 +278,19 @@ def generate_pdf_report(
     {vpp['summary']}
     <br/><br/>
 
-    <b>Supported Grid Services:</b>
+    <b>Supported Grid Services</b>
     <br/>
-    {services}
+    • {services}
     <br/><br/>
 
-    <b>Key Strengths:</b>
+    <b>Key Strengths</b>
     <br/>
-    {strengths}
+    • {strengths}
     <br/><br/>
 
-    <b>Recommendations:</b>
+    <b>Potential Risks</b>
     <br/>
-    {recommendations}
+    • {risks}
     """
 
     elements.append(
@@ -405,7 +299,7 @@ def generate_pdf_report(
 
             vpp_text,
 
-            styles['BodyText']
+            styles["BodyText"]
         )
     )
 
@@ -414,7 +308,45 @@ def generate_pdf_report(
     )
 
     # =====================================================
-    # FINAL FOOTER
+    # RECOMMENDATIONS
+    # =====================================================
+
+    recommendation_text = """
+
+    <b>Strategic Recommendations</b>
+    <br/><br/>
+    """
+
+    for rec in recommendations:
+
+        recommendation_text += f"""
+
+        <b>{rec['title']}</b>
+        <br/>
+
+        Priority: {rec['priority']}
+        <br/><br/>
+
+        {rec['recommendation']}
+        <br/><br/>
+        """
+
+    elements.append(
+
+        Paragraph(
+
+            recommendation_text,
+
+            styles["BodyText"]
+        )
+    )
+
+    elements.append(
+        Spacer(1, 25)
+    )
+
+    # =====================================================
+    # FOOTER
     # =====================================================
 
     footer = Paragraph(
@@ -424,7 +356,7 @@ def generate_pdf_report(
         using the AI VPP Property Intelligence Engine.
         """,
 
-        styles['Italic']
+        styles["Italic"]
     )
 
     elements.append(footer)

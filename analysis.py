@@ -563,13 +563,49 @@ def estimate_solar(
                 daily_generation,
                 2
             ),
-
+        "monthly_generation_kwh":
+            round(
+                annual_generation / 12, 2
+                  
+            ),
         "annual_generation_kwh":
             round(
                 annual_generation,
                 2
-            )
-    }
+            ),
+        "insights": 
+            { "solar_viability":
+                ( "Excellent" 
+                 if peak_sun_hours >= 5.5 else "Good" 
+                 if peak_sun_hours >= 4.5 else "Moderate" ),
+                "deployment_scale":
+                    ( "Utility Scale" 
+                     if system_capacity_kw >= 5000 else "Commercial Scale" 
+                     if system_capacity_kw >= 500 else "Small Commercial" )
+            },
+            "performance": 
+                { 
+                 "specific_yield":
+                    round( annual_generation / system_capacity_kw, 2 ),
+                 "capacity_factor":
+                     round( ( annual_generation / ( system_capacity_kw * 24 * 365 ) ) * 100, 2 ) 
+                },
+            "technical":
+                { 
+                 "usable_area_sqm":
+                     round(usable_area, 2), 
+                 "panel_count":
+                     panel_count, 
+                 "system_capacity_kw":
+                     round(system_capacity_kw, 2),
+                 "panel_wattage":
+                     panel_wattage,
+                 "packing_factor":
+                     packing_factor,
+                 "performance_ratio":
+                     performance_ratio 
+                },
+        }
 
 
 # =========================================================
@@ -795,19 +831,13 @@ def generate_detailed_report(
     # ENERGY CONSUMPTION ESTIMATION
     # =====================================================
 
-    # Approx commercial energy intensity
     consumption_map = {
 
         "Warehouse": 4,
-
         "Mall": 18,
-
         "Hospital": 25,
-
         "Factory": 15,
-
         "Office": 12,
-
         "Small Commercial": 8
     }
 
@@ -819,7 +849,6 @@ def generate_detailed_report(
     )
 
     monthly_consumption = (
-
         roof_area_sqm
         * energy_intensity
     )
@@ -834,20 +863,23 @@ def generate_detailed_report(
 
     homes_powered = int(
 
-        solar["daily_generation_kwh"]
-        / 12
+        solar[
+            "daily_generation_kwh"
+        ] / 12
     )
 
     ev_charges = int(
 
-        solar["daily_generation_kwh"]
-        / 60
+        solar[
+            "daily_generation_kwh"
+        ] / 60
     )
 
     trees_equivalent = int(
 
-        revenue["carbon_savings_tons"]
-        * 45
+        revenue[
+            "carbon_savings_tons"
+        ] * 45
     )
 
     # =====================================================
@@ -856,14 +888,17 @@ def generate_detailed_report(
 
     estimated_system_cost = (
 
-        solar["system_capacity_kw"]
-        * 800
+        solar["technical"][
+            "system_capacity_kw"
+        ] * 800
     )
 
     roi_years = (
 
         estimated_system_cost
-        / revenue["annual_savings_usd"]
+        / revenue[
+            "annual_savings_usd"
+        ]
     )
 
     # =====================================================
@@ -871,149 +906,10 @@ def generate_detailed_report(
     # =====================================================
 
     summary = f"""
-This property shows strong solar feasibility potential due to its estimated rooftop area of {roof_area_sqm:.0f} sqm and average solar irradiance of {peak_sun_hours} Peak Sun Hours.
+This property demonstrates strong distributed energy potential with an estimated rooftop area of {roof_area_sqm:.0f} sqm and regional solar irradiance of {peak_sun_hours} Peak Sun Hours.
 
-The estimated solar system can generate approximately {solar['daily_generation_kwh']:.0f} kWh/day, making the property suitable for commercial solar deployment and future VPP participation.
+The proposed solar system can generate approximately {solar["daily_generation_kwh"]:.0f} kWh/day, supporting commercial solar deployment, battery integration, and future Virtual Power Plant participation.
 """
-
-    # =====================================================
-    # PROPERTY INSIGHTS
-    # =====================================================
-
-    property_insights = {
-
-        "property_type":
-            property_type,
-
-        "roof_area_sqm":
-            round(roof_area_sqm, 2),
-
-        "estimated_daily_consumption_kwh":
-            round(daily_consumption, 2),
-
-        "consumption_methodology":
-            (
-                "Estimated using commercial "
-                "energy intensity benchmarks "
-                "based on property type and "
-                "built-up area."
-            )
-    }
-
-    # =====================================================
-    # SOLAR INSIGHTS
-    # =====================================================
-
-    solar_insights = {
-
-        "peak_sun_hours":
-            peak_sun_hours,
-
-        "system_capacity_kw":
-            solar["system_capacity_kw"],
-
-        "daily_generation_kwh":
-            solar["daily_generation_kwh"],
-
-        "annual_generation_kwh":
-            solar["annual_generation_kwh"],
-
-        "homes_powered_equivalent":
-            homes_powered,
-
-        "ev_charging_equivalent":
-            ev_charges,
-
-        "solar_comment":
-            (
-                "The rooftop appears suitable "
-                "for medium-to-large scale "
-                "commercial solar deployment."
-            )
-    }
-
-    # =====================================================
-    # BATTERY INSIGHTS
-    # =====================================================
-
-    battery_insights = {
-
-        "battery_mwh":
-            battery["battery_mwh"],
-
-        "battery_comment":
-            (
-                "Recommended battery sizing "
-                "supports energy shifting, "
-                "backup support, and VPP "
-                "participation."
-            )
-    }
-
-    # =====================================================
-    # FINANCIAL INSIGHTS
-    # =====================================================
-
-    financial_insights = {
-
-        "annual_savings_usd":
-            revenue["annual_savings_usd"],
-
-        "estimated_roi_years":
-            round(roi_years, 1),
-
-        "financial_comment":
-            (
-                "Estimated savings are based "
-                "on projected solar generation "
-                "offsetting grid electricity."
-            )
-    }
-
-    # =====================================================
-    # ENVIRONMENTAL INSIGHTS
-    # =====================================================
-
-    environmental_insights = {
-
-        "carbon_savings_tons":
-            revenue["carbon_savings_tons"],
-
-        "tree_equivalent":
-            trees_equivalent,
-
-        "environment_comment":
-            (
-                "The project can significantly "
-                "reduce annual carbon emissions."
-            )
-    }
-
-    # =====================================================
-    # VPP READINESS
-    # =====================================================
-
-    # if vpp_score >= 80:
-
-    #     vpp_comment = (
-    #         "High VPP readiness. Property "
-    #         "is suitable for future smart "
-    #         "grid participation."
-    #     )
-
-    # elif vpp_score >= 60:
-
-    #     vpp_comment = (
-    #         "Moderate VPP readiness with "
-    #         "good distributed energy "
-    #         "potential."
-    #     )
-
-    # else:
-
-    #     vpp_comment = (
-    #         "Limited VPP readiness."
-    #     )
 
     # =====================================================
     # FINAL REPORT
@@ -1021,33 +917,584 @@ The estimated solar system can generate approximately {solar['daily_generation_k
 
     return {
 
-        "executive_summary":
-            summary,
+        # =================================================
+        # EXECUTIVE SUMMARY
+        # =================================================
 
-        "property_insights":
-            property_insights,
+"executive_summary": {
 
-        "solar_insights":
-            solar_insights,
+            "summary":
+                summary,
 
-        "battery_insights":
-            battery_insights,
+            "key_metrics": {
 
-        "financial_insights":
-            financial_insights,
+                "property_type":
+                    property_type,
 
-        "environmental_insights":
-            environmental_insights,
+                "roof_area_sqm":
+                    round(
+                        roof_area_sqm,
+                        2
+                    ),
 
-        # "vpp_analysis": {
+                "solar_capacity_kw":
+                    solar["technical"][
+                        "system_capacity_kw"
+                    ],
 
-        #     "vpp_score":
-        #         vpp_score,
+                "battery_mwh":
+                    battery[
+                        "battery_mwh"
+                    ],
 
-        #     "vpp_comment":
-        #         vpp_comment
-        # }
+                "annual_generation_kwh":
+                    solar[
+                        "annual_generation_kwh"
+                    ],
+
+                "annual_savings_usd":
+                    revenue[
+                        "annual_savings_usd"
+                    ]
+            }
+        },
+
+        # =================================================
+        # PROPERTY ANALYSIS
+        # =================================================
+
+"property": {
+
+            "classification": {
+
+                "property_type":
+                    property_type,
+
+                "roof_area_sqm":
+                    round(
+                        roof_area_sqm,
+                        2
+                    )
+            },
+
+            "energy_profile": {
+
+                "estimated_daily_consumption_kwh":
+                    round(
+                        daily_consumption,
+                        2
+                    ),
+
+                "estimated_monthly_consumption_kwh":
+                    round(
+                        monthly_consumption,
+                        2
+                    ),
+
+                "energy_intensity":
+                    energy_intensity
+            },
+
+            "insights": {
+
+                "consumption_methodology":
+                    (
+                        "Estimated using "
+                        "commercial energy "
+                        "benchmarks based "
+                        "on property type."
+                    ),
+
+                "property_comment":
+                    (
+                        "Property profile is "
+                        "suitable for distributed "
+                        "energy deployment."
+                    )
+            }
+        },
+
+"solar":{
+    
+"technical":
+    (
+        f"Solar Infrastructure Analysis\n\n"
+
+        f"• Usable Rooftop Area: "
+        f"{solar['technical']['usable_area_sqm']:.0f} sqm\n\n"
+
+        f"• Estimated Panel Count: "
+        f"{solar['technical']['panel_count']:,}\n\n"
+
+        f"• Proposed System Capacity: "
+        f"{solar['technical']['system_capacity_kw']:.0f} kW\n\n"
+
+        f"• System Performance Ratio: "
+        f"{solar['technical']['performance_ratio']}\n\n"
+
+        f"The rooftop configuration appears "
+        f"suitable for medium-to-large scale "
+        f"commercial photovoltaic deployment "
+        f"with strong distributed energy "
+        f"integration potential."
+    )
+,
+
+    # =====================================================
+    # GENERATION ANALYSIS
+    # =====================================================
+
+"generation":
+    (
+        f"Estimated Regional Solar Resource\n\n"
+
+        f"• Average Solar Irradiance: "
+        f"{peak_sun_hours} Peak Sun Hours\n\n"
+
+        f"• Estimated Daily Generation: "
+        f"{solar['daily_generation_kwh']:.0f} kWh/day\n\n"
+
+        f"• Estimated Monthly Generation: "
+        f"{solar['monthly_generation_kwh']:.0f} kWh/month\n\n"
+
+        f"• Estimated Annual Generation: "
+        f"{solar['annual_generation_kwh']:.0f} kWh/year\n\n"
+
+        f"The projected generation profile "
+        f"indicates strong commercial-scale "
+        f"solar production potential capable "
+        f"of significantly offsetting grid "
+        f"electricity consumption and improving "
+        f"long-term energy resilience."
+    )
+,
+
+    # =====================================================
+    # EQUIVALENCY ANALYSIS
+    # =====================================================
+
+    "equivalencies": {
+
+        "homes_powered":
+            homes_powered,
+
+        "ev_charges":
+            ev_charges,
+
+        "equivalency_summary":
+            (
+                f"The estimated solar generation "
+                f"capacity is approximately equivalent "
+                f"to powering {homes_powered:,} average "
+                f"homes daily or supporting nearly "
+                f"{ev_charges:,} EV charging sessions "
+                f"per day. These equivalency metrics "
+                f"help contextualize the scale of the "
+                f"proposed distributed energy system."
+            )
+    },
+
+    # =====================================================
+    # PERFORMANCE ANALYSIS
+    # =====================================================
+
+    "performance": {
+
+        "specific_yield":
+            solar["performance"][
+                "specific_yield"
+            ],
+
+        "capacity_factor":
+            solar["performance"][
+                "capacity_factor"
+            ],
+
+        "performance_summary":
+            (
+                f"Performance analysis indicates a "
+                f"specific yield of approximately "
+                f"{solar['performance']['specific_yield']:.0f} "
+                f"kWh/kW/year with an estimated "
+                f"capacity factor of "
+                f"{solar['performance']['capacity_factor']:.1f}%. "
+                f"These metrics suggest commercially "
+                f"viable solar generation performance "
+                f"under current operating assumptions."
+            )
+    },
+
+    # =====================================================
+    # STRATEGIC INSIGHTS
+    # =====================================================
+
+    "insights": {
+
+        "solar_viability":
+            solar["insights"][
+                "solar_viability"
+            ],
+
+        "deployment_scale":
+            solar["insights"][
+                "deployment_scale"
+            ],
+
+        "strategic_summary":
+            (
+                f"The property demonstrates "
+                f"{solar['insights']['solar_viability']} "
+                f"solar viability with a deployment "
+                f"classification of "
+                f"{solar['insights']['deployment_scale']}. "
+                f"Based on estimated generation scale "
+                f"and rooftop utilization characteristics, "
+                f"the project appears suitable for "
+                f"future distributed energy integration "
+                f"including battery optimization and "
+                f"Virtual Power Plant participation."
+            )
     }
+
+},
+
+        # =================================================
+        # BATTERY ANALYSIS
+        # =================================================
+
+"battery": {
+
+    # =====================================================
+    # STORAGE ANALYSIS
+    # =====================================================
+
+    "storage": {
+
+        "battery_kwh":
+            battery["battery_kwh"],
+
+        "battery_mwh":
+            battery["battery_mwh"],
+
+        "storage_summary":
+            (
+                f"Battery Storage Infrastructure\n\n"
+
+                f"• Recommended Battery Capacity: "
+                f"{battery['battery_kwh']:.0f} kWh\n\n"
+
+                f"• Utility Scale Storage: "
+                f"{battery['battery_mwh']:.2f} MWh\n\n"
+
+                f"• Storage Strategy: "
+                f"Commercial Distributed Energy Storage\n\n"
+
+                f"The proposed battery sizing is "
+                f"designed to support commercial "
+                f"energy optimization and improve "
+                f"overall distributed energy flexibility."
+            )
+    },
+
+    # =====================================================
+    # GRID APPLICATIONS
+    # =====================================================
+
+    "applications": {
+
+        "supported_services": [
+
+            "Peak Shaving",
+
+            "Demand Response",
+
+            "Backup Power",
+
+            "Energy Arbitrage"
+        ],
+
+        "applications_summary":
+            (
+                f"Operational Energy Applications\n\n"
+
+                f"• Peak Demand Reduction Support\n\n"
+
+                f"• Backup Power Resiliency\n\n"
+
+                f"• Energy Time-Shifting Capability\n\n"
+
+                f"• Future Smart Grid Participation\n\n"
+
+                f"The battery infrastructure can "
+                f"enhance operational resilience "
+                f"while enabling future participation "
+                f"in advanced distributed energy and "
+                f"grid-balancing programs."
+            )
+    },
+
+    # =====================================================
+    # PERFORMANCE ANALYSIS
+    # =====================================================
+
+    "performance": {
+
+        "estimated_backup_hours":
+            round(
+                battery["battery_kwh"] / 500,
+                1
+            ),
+
+        "dispatch_capability":
+            (
+                "High"
+                if battery["battery_mwh"] >= 5
+                else
+                "Moderate"
+                if battery["battery_mwh"] >= 1
+                else
+                "Limited"
+            ),
+
+        "performance_summary":
+            (
+                f"Battery Performance Assessment\n\n"
+
+                f"• Estimated Backup Capability: "
+                f"{round(battery['battery_kwh'] / 500, 1)} hours\n\n"
+
+                f"• Dispatch Flexibility: "
+                f"{'High' if battery['battery_mwh'] >= 5 else 'Moderate' if battery['battery_mwh'] >= 1 else 'Limited'}\n\n"
+
+                f"• Grid Interaction Potential: "
+                f"Commercial Scale\n\n"
+
+                f"The proposed battery configuration "
+                f"provides operational flexibility "
+                f"for commercial energy management "
+                f"while supporting future scalable "
+                f"energy storage expansion."
+            )
+    },
+
+    # =====================================================
+    # STRATEGIC INSIGHTS
+    # =====================================================
+
+    "insights": {
+
+        "battery_readiness":
+            (
+                "Advanced"
+                if battery["battery_mwh"] >= 5
+                else
+                "Commercial Ready"
+                if battery["battery_mwh"] >= 1
+                else
+                "Basic"
+            ),
+
+        "vpp_compatibility":
+            (
+                "Strong"
+                if battery["battery_mwh"] >= 3
+                else
+                "Moderate"
+            ),
+
+        "strategic_summary":
+            (
+                f"Strategic Energy Storage Insights\n\n"
+
+                f"• Battery Readiness Level: "
+                f"{'Advanced' if battery['battery_mwh'] >= 5 else 'Commercial Ready' if battery['battery_mwh'] >= 1 else 'Basic'}\n\n"
+
+                f"• VPP Compatibility: "
+                f"{'Strong' if battery['battery_mwh'] >= 3 else 'Moderate'}\n\n"
+
+                f"• Energy Flexibility Potential: "
+                f"Commercial Distributed Energy\n\n"
+
+                f"The battery system architecture "
+                f"appears suitable for future energy "
+                f"optimization strategies including "
+                f"distributed storage coordination, "
+                f"demand response participation, and "
+                f"Virtual Power Plant integration."
+            )
+    }
+},
+
+
+        # =================================================
+        # ENVIRONMENTAL ANALYSIS
+        # =================================================
+# =================================================
+# FINANCIAL ANALYSIS
+# =================================================
+
+"financial": {
+
+    # =====================================================
+    # ECONOMIC ANALYSIS
+    # =====================================================
+
+    "economics": {
+
+        "estimated_system_cost_usd":
+            round(
+                estimated_system_cost,
+                2
+            ),
+
+        "annual_savings_usd":
+            revenue[
+                "annual_savings_usd"
+            ],
+
+        "estimated_roi_years":
+            round(
+                roi_years,
+                1
+            ),
+
+        "economics_summary":
+            (
+                f"Financial Performance Assessment\n\n"
+
+                f"• Estimated System Investment: "
+                f"${estimated_system_cost:,.0f} USD\n\n"
+
+                f"• Estimated Annual Savings: "
+                f"${revenue['annual_savings_usd']:,.0f} USD/year\n\n"
+
+                f"• Estimated ROI Period: "
+                f"{roi_years:.1f} years\n\n"
+
+                f"The projected financial profile "
+                f"indicates meaningful long-term "
+                f"commercial electricity cost "
+                f"reduction potential supported by "
+                f"onsite renewable energy generation."
+            )
+    },
+
+    # =====================================================
+    # SAVINGS ANALYSIS
+    # =====================================================
+
+    "savings": {
+
+        "monthly_savings_usd":
+            round(
+                revenue[
+                    "annual_savings_usd"
+                ] / 12,
+                2
+            ),
+
+        "daily_savings_usd":
+            round(
+                revenue[
+                    "annual_savings_usd"
+                ] / 365,
+                2
+            ),
+
+        "savings_summary":
+            (
+                f"Projected Energy Cost Savings\n\n"
+
+                f"• Estimated Daily Savings: "
+                f"${revenue['annual_savings_usd']/365:,.0f} USD/day\n\n"
+
+                f"• Estimated Monthly Savings: "
+                f"${revenue['annual_savings_usd']/12:,.0f} USD/month\n\n"
+
+                f"• Estimated Annual Savings: "
+                f"${revenue['annual_savings_usd']:,.0f} USD/year\n\n"
+
+                f"The distributed energy deployment "
+                f"can substantially reduce long-term "
+                f"grid electricity dependence and "
+                f"improve operational energy economics."
+            )
+    },
+
+    # =====================================================
+    # INVESTMENT INSIGHTS
+    # =====================================================
+
+    "insights": {
+
+        "financial_viability":
+            (
+                "Excellent"
+                if roi_years <= 4
+                else
+                "Good"
+                if roi_years <= 7
+                else
+                "Moderate"
+            ),
+
+        "investment_scale":
+            (
+                "Utility Scale"
+                if estimated_system_cost >= 5000000
+                else
+                "Commercial Scale"
+            ),
+
+        "strategic_summary":
+            (
+                f"Strategic Financial Insights\n\n"
+
+                f"• Financial Viability: "
+                f"{'Excellent' if roi_years <= 4 else 'Good' if roi_years <= 7 else 'Moderate'}\n\n"
+
+                f"• Investment Category: "
+                f"{'Utility Scale' if estimated_system_cost >= 5000000 else 'Commercial Scale'}\n\n"
+
+                f"• Long-Term Energy Economics: "
+                f"Positive\n\n"
+
+                f"The proposed distributed energy "
+                f"investment demonstrates strong "
+                f"potential for long-term operational "
+                f"savings while supporting future "
+                f"energy resiliency and sustainability "
+                f"objectives."
+            )
+    }
+},
+
+"environmental": {
+
+            "impact": {
+
+                "carbon_savings_tons":
+                    revenue[
+                        "carbon_savings_tons"
+                    ],
+
+                "tree_equivalent":
+                    trees_equivalent
+            },
+
+            "insights": {
+
+                "environment_comment":
+                    (
+                        "The project can significantly "
+                        "reduce annual carbon emissions "
+                        "and support sustainability goals."
+                    )
+            }
+        }
+    }
+
+
     # =========================================================
 # ADVANCED VPP SCORING ENGINE
 # =========================================================
@@ -1363,6 +1810,299 @@ def calculate_vpp_analysis(
         }
     }
 
+# =========================================================
+# RECOMMENDATION ENGINE
+# =========================================================
+
+def generate_recommendations(
+
+    property_type,
+
+    roof_area_sqm,
+
+    solar,
+
+    battery,
+
+    revenue,
+
+    peak_sun_hours,
+
+    vpp_analysis
+):
+
+    recommendations = []
+
+    # =====================================================
+    # SOLAR RECOMMENDATIONS
+    # =====================================================
+
+    if solar["technical"]["system_capacity_kw"] < 500:
+
+        recommendations.append({
+
+            "category":
+                "Solar Expansion",
+
+            "priority":
+                "Medium",
+
+            "title":
+                "Increase Solar Deployment Scale",
+
+            "recommendation":
+                (
+                    "The current estimated solar "
+                    "capacity remains relatively "
+                    "small for advanced commercial "
+                    "energy optimization. Expanding "
+                    "rooftop solar deployment could "
+                    "improve long-term economics, "
+                    "increase grid export capability, "
+                    "and strengthen future VPP "
+                    "participation potential."
+                )
+        })
+
+    # =====================================================
+    # BATTERY RECOMMENDATIONS
+    # =====================================================
+
+    if battery["battery_mwh"] < 1:
+
+        recommendations.append({
+
+            "category":
+                "Battery Storage",
+
+            "priority":
+                "High",
+
+            "title":
+                "Increase Energy Storage Capacity",
+
+            "recommendation":
+                (
+                    "The recommended battery storage "
+                    "capacity may limit dispatch "
+                    "flexibility and reduce the "
+                    "property's ability to participate "
+                    "in advanced grid services such as "
+                    "demand response, peak shaving, "
+                    "and energy arbitrage. Increasing "
+                    "battery capacity could improve "
+                    "resiliency and VPP readiness."
+                )
+        })
+
+    # =====================================================
+    # IRRADIANCE RECOMMENDATIONS
+    # =====================================================
+
+    if peak_sun_hours < 4.5:
+
+        recommendations.append({
+
+            "category":
+                "Energy Optimization",
+
+            "priority":
+                "Medium",
+
+            "title":
+                "Consider Hybrid Energy Strategy",
+
+            "recommendation":
+                (
+                    "The site's estimated solar "
+                    "irradiance is moderate relative "
+                    "to high-performing solar regions. "
+                    "A hybrid distributed energy "
+                    "strategy incorporating battery "
+                    "optimization, energy efficiency "
+                    "measures, or supplemental "
+                    "renewable generation may improve "
+                    "overall project economics and "
+                    "operational reliability."
+                )
+        })
+
+    # =====================================================
+    # PROPERTY-TYPE RECOMMENDATIONS
+    # =====================================================
+
+    if property_type in [
+
+        "Warehouse",
+
+        "Factory",
+
+        "Mall"
+    ]:
+
+        recommendations.append({
+
+            "category":
+                "VPP Integration",
+
+            "priority":
+                "High",
+
+            "title":
+                "Evaluate VPP Participation",
+
+            "recommendation":
+                (
+                    "The property's operational and "
+                    "energy characteristics appear "
+                    "well-suited for future Virtual "
+                    "Power Plant integration. "
+                    "Participation in distributed "
+                    "energy aggregation programs may "
+                    "unlock additional value streams "
+                    "through demand response, grid "
+                    "support services, and energy "
+                    "market participation."
+                )
+        })
+
+    # =====================================================
+    # ROI RECOMMENDATIONS
+    # =====================================================
+
+    estimated_roi = (
+
+        (
+            solar["technical"]["system_capacity_kw"]
+            * 800
+        )
+
+        /
+
+        revenue["annual_savings_usd"]
+    )
+
+    if estimated_roi > 8:
+
+        recommendations.append({
+
+            "category":
+                "Financial Optimization",
+
+            "priority":
+                "Medium",
+
+            "title":
+                "Improve Project Financial Performance",
+
+            "recommendation":
+                (
+                    "The estimated project payback "
+                    "period is relatively long under "
+                    "current assumptions. Financial "
+                    "performance may be improved "
+                    "through capital incentives, "
+                    "optimized system sizing, battery "
+                    "integration, time-of-use tariff "
+                    "optimization, or participation "
+                    "in distributed energy programs."
+                )
+        })
+
+    # =====================================================
+    # VPP READINESS RECOMMENDATIONS
+    # =====================================================
+
+    if vpp_analysis["vpp_score"] >= 80:
+
+        recommendations.append({
+
+            "category":
+                "Grid Services",
+
+            "priority":
+                "High",
+
+            "title":
+                "Pursue Advanced Grid Service Integration",
+
+            "recommendation":
+                (
+                    "The property demonstrates strong "
+                    "technical potential for advanced "
+                    "distributed energy participation. "
+                    "The site may be suitable for "
+                    "future grid-balancing programs "
+                    "including frequency regulation, "
+                    "peak demand reduction, demand "
+                    "response aggregation, and "
+                    "commercial VPP participation."
+                )
+        })
+
+    # =====================================================
+    # SUSTAINABILITY RECOMMENDATIONS
+    # =====================================================
+
+    if revenue["carbon_savings_tons"] > 500:
+
+        recommendations.append({
+
+            "category":
+                "Sustainability",
+
+            "priority":
+                "Low",
+
+            "title":
+                "Leverage Sustainability Benefits",
+
+            "recommendation":
+                (
+                    "The projected carbon reduction "
+                    "potential may contribute "
+                    "meaningfully toward corporate "
+                    "ESG initiatives and sustainability "
+                    "targets. The organization may "
+                    "benefit from incorporating this "
+                    "project into broader environmental "
+                    "reporting and decarbonization "
+                    "strategies."
+                )
+        })
+
+    # =====================================================
+    # DEFAULT RECOMMENDATION
+    # =====================================================
+
+    if len(recommendations) == 0:
+
+        recommendations.append({
+
+            "category":
+                "General",
+
+            "priority":
+                "Low",
+
+            "title":
+                "Maintain Distributed Energy Evaluation",
+
+            "recommendation":
+                (
+                    "The property demonstrates balanced "
+                    "distributed energy characteristics "
+                    "under current assumptions. Further "
+                    "detailed engineering analysis, "
+                    "load profiling, and financial "
+                    "optimization may improve project "
+                    "accuracy and deployment planning."
+                )
+        })
+
+    return recommendations
+
+
 def analyze_property(
     lat,lon
 ):
@@ -1496,7 +2236,15 @@ def analyze_property(
 
     peak_sun_hours
 )
-
+    recommendations = generate_recommendations(
+    property_type,
+    roof_area_sqm,
+    solar,
+    battery,
+    revenue,
+    peak_sun_hours,
+    vpp_analysis
+)
     # =====================================================
     # FINAL JSON RESPONSE
     # =====================================================
@@ -1511,34 +2259,19 @@ def analyze_property(
             "longitude":
                 lon
         },
+        "executive_summary": report["executive_summary"],
+        
+        "solar": report["solar"],
 
-        "property": {
+        "battery": report["battery"],
 
-            "property_type":
-                property_type,
+        "financial": report["financial"],
 
-            "roof_area_sqm":
-                roof_area_sqm,
-
-            "building_type":
-                building_type,
-
-            "building_name":
-                building_name,
-
-            "levels":
-                levels
-        },
-
-        "solar": solar,
-
-        "battery": battery,
-
-        "revenue": revenue,
-
+        "property": report["property"],
+        
         "vpp_analysis":
             vpp_analysis,
-        "Report":
-            report
+        "recommendations":
+            recommendations
     }
 
