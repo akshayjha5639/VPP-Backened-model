@@ -2269,6 +2269,8 @@ def analyze_property(
 
         "property": report["property"],
         
+        "environmental": report["environmental"],
+        
         "vpp_analysis":
             vpp_analysis,
         "recommendations":
