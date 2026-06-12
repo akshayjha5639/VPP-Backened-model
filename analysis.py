@@ -1,8 +1,3 @@
-# =========================================================
-# NON-AI AUTONOMOUS PROPERTY INTELLIGENCE SYSTEM
-# USING:
-# Mapbox + OpenStreetMap + GIS
-# =========================================================
 
 # INSTALL:
 # pip install osmnx geopandas shapely geopy requests pandas
@@ -17,11 +12,6 @@ import pandas as pd
 import numpy as np
 
 
-# =========================================================
-# MAPBOX TOKEN
-# =========================================================
-
-MAPBOX_TOKEN = "YOUR_MAPBOX_TOKEN"
 
 
 # =========================================================
@@ -45,7 +35,9 @@ STANDARD_VALUES = {
     # Carbon savings
     "carbon_factor": 0.0007
 }
-
+# Add this helper at the top of analysis.py
+def safe_div(a, b, fallback=0):
+    return a / b if b != 0 else fallback
 
 # =========================================================
 # 1. GEOCODING ENGINE
@@ -586,9 +578,9 @@ def estimate_solar(
             "performance": 
                 { 
                  "specific_yield":
-                    round( annual_generation / system_capacity_kw, 2 ),
+                    round( safe_div(annual_generation, system_capacity_kw), 2 ),
                  "capacity_factor":
-                     round( ( annual_generation / ( system_capacity_kw * 24 * 365 ) ) * 100, 2 ) 
+                     round( ( safe_div(annual_generation, system_capacity_kw * 24 * 365) * 100), 2 ) 
                 },
             "technical":
                 { 
@@ -894,11 +886,7 @@ def generate_detailed_report(
     )
 
     roi_years = (
-
-        estimated_system_cost
-        / revenue[
-            "annual_savings_usd"
-        ]
+        safe_div(estimated_system_cost, revenue["annual_savings_usd"], fallback=999)
     )
 
     # =====================================================
@@ -1970,17 +1958,11 @@ def generate_recommendations(
     # ROI RECOMMENDATIONS
     # =====================================================
 
-    estimated_roi = (
-
-        (
-            solar["technical"]["system_capacity_kw"]
-            * 800
-        )
-
-        /
-
-        revenue["annual_savings_usd"]
-    )
+    estimated_roi = safe_div(
+    solar["technical"]["system_capacity_kw"] * 800,
+    revenue["annual_savings_usd"],
+    fallback=999
+)
 
     if estimated_roi > 8:
 
