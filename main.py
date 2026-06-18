@@ -38,7 +38,9 @@ class PropertyRequest(BaseModel):
 # =====================================================
 # API ENDPOINT
 # =====================================================
-
+@app.get("/")
+def root():
+    return {"message": "API running"}
 @app.post("/analyze-property")
 
 def analyze(request: PropertyRequest):
