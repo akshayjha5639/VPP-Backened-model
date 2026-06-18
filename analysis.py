@@ -40,30 +40,6 @@ def safe_div(a, b, fallback=0):
     return a / b if b != 0 else fallback
 
 # =========================================================
-# 1. GEOCODING ENGINE
-# =========================================================
-
-# def get_coordinates(address):
-
-#     geolocator = Nominatim(
-#         user_agent="vpp-platform"
-#     )
-
-#     location = geolocator.geocode(address)
-
-#     if not location:
-
-#         raise Exception(
-#             "Address not found."
-#         )
-
-#     return (
-#         location.latitude,
-#         location.longitude
-#     )
-
-
-# =========================================================
 # 2. FETCH BUILDING FOOTPRINT
 # =========================================================
 

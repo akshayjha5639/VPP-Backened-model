@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
 
-from analysis import analyze_property
+from new_analysis import analyze_property
 from fastapi.responses import FileResponse
 
 from pdf_gen import (

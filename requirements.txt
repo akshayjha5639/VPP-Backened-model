@@ -13,3 +13,7 @@ requests
 reportlab
 pillow
 matplotlib
+transformers 
+torch 
+torchvision 
+opencv
