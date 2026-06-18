@@ -777,21 +777,22 @@ def generate_pdf_report(report, filename="TechOps_Report.pdf"):
     E.append(Spacer(1, 10))
 
     # Grid services
+    
     E.append(sub_heading("Eligible Grid Services"))
-    grid_svcs = vpp.get("grid_services", [])
-    gs_rows = [[Paragraph(f'<font color="#00c9a7">✓</font>  {s}', BODY)
-                for s in grid_svcs]]
-    gs_t = Table(gs_rows, colWidths=[CONTENT_W / len(grid_svcs)] * len(grid_svcs))
-    gs_t.setStyle(TableStyle([
+    if services:
+        service_rows = [[Paragraph(f'<font color="#4da3ff">▶</font>  {s}', BODY) for s in services]]
+        svc_t = Table(service_rows, colWidths=[CONTENT_W / len(services)] * len(services))
+        svc_t.setStyle(TableStyle([
         ("BACKGROUND",   (0,0),(-1,-1), CARD),
         ("BOX",          (0,0),(-1,-1), 0.4, BORDER),
         ("TOPPADDING",   (0,0),(-1,-1), 8),
         ("BOTTOMPADDING",(0,0),(-1,-1), 8),
         ("ALIGN",        (0,0),(-1,-1), "CENTER"),
     ]))
-    E.append(gs_t)
-    E.append(Spacer(1, 12))
-
+        E.append(svc_t)
+        E.append(Spacer(1, 12))
+    else:
+        E.append(body_para("No specific grid services identified for this configuration."))
     # Strengths / Risks
     if vpp.get("strengths"):
         strengths_text = "<br/>".join(

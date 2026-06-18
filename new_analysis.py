@@ -37,7 +37,7 @@ import pandas as pd
 # CONFIG
 # =========================================================
 
-GOOGLE_MAPS_API_KEY  = os.getenv("GOOGLE_MAPS_API_KEY", "")
+GOOGLE_MAPS_API_KEY  = "AIzaSyDRYD2M4V6ALBpSqml_C3N6f-6NDq_fx50"
 MODEL_ID             = "Yifeng-Liu/rt-detr-finetuned-for-satellite-image-roofs-detection"
 CONFIDENCE_THRESHOLD = 0.3
 
