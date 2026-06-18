@@ -16,4 +16,4 @@ matplotlib
 transformers 
 torch 
 torchvision 
-opencv
+opencv-python-headless
