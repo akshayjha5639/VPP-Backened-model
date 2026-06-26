@@ -362,10 +362,13 @@ def chart_financial_dcf(annual_savings, system_cost, roi_years):
         mpatches.Patch(color=BLUE,   label=f"Battery  ${battery_s:,.0f}"),
         mpatches.Patch(color=TEAL,   label=f"VPP  ${vpp_s:,.0f}"),
     ]
-    ax2.legend(handles=patches, loc="lower center", ncol=1,
-               frameon=False, labelcolor="white", fontsize=8)
+    ax2.legend(handles=patches, loc="upper center",
+           bbox_to_anchor=(0.5, -0.08),
+           ncol=3, frameon=False,
+           labelcolor="white", fontsize=7)
 
     fig.tight_layout(pad=1.5)
+    fig.subplots_adjust(bottom=0.18)
     return _fig_to_image(fig, 7.2, 3.2)
 
 

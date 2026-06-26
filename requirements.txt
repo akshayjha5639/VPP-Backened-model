@@ -3,9 +3,9 @@ uvicorn
 
 numpy<2
 pandas
-
-osmnx
-geopandas
+dotenv
+# osmnx
+# geopandas
 shapely
 pyproj
 
@@ -13,7 +13,7 @@ requests
 reportlab
 pillow
 matplotlib
-transformers 
-torch 
-torchvision 
+# transformers 
+# torch 
+# torchvision 
 opencv-python-headless

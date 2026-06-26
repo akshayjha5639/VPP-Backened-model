@@ -15,8 +15,10 @@ Keys needed:
 # =========================================================
 # IMPORTS
 # =========================================================
-
+from dotenv import load_dotenv
 import os
+
+load_dotenv()
 import re
 import math
 import urllib.request
@@ -211,98 +213,242 @@ def _nearest_to_center(detections: list, img_w: int, img_h: int) -> dict:
 # 2. FETCH BUILDING FOOTPRINT  (replaces OSMnx version)
 # =========================================================
 
+# def fetch_building_footprint(latitude: float, longitude: float) -> dict:
+#     """
+#     Replaces the original OSMnx fetch_building_footprint().
+
+#     Old: OSMnx → OpenStreetMap polygon (fails in India tier-2+)
+#     New: Google Maps satellite → RT-DETR model → nearest roof to center
+
+#     Returns same keys as original so rest of pipeline is unchanged:
+#       geometry  → list of (lat,lon) corner tuples
+#       building  → "detected"
+#       name      → "Unknown"
+#       levels    → 1
+#       area_sqm  → real-world area in m²  [NEW]
+#       confidence→ model confidence        [NEW]
+#       image_path→ saved satellite PNG     [NEW]
+#     """
+#     image_path = None
+
+#     try:
+#         # Step 1: fetch satellite image
+#         image_path = _fetch_satellite(latitude, longitude)
+
+#         # Step 2: load model + run detection
+#         model, processor, device = _load_model()
+
+#         image_cv  = cv2.imread(image_path)
+#         image_pil = Image.open(image_path).convert("RGB")
+#         img_h, img_w = image_cv.shape[:2]
+
+
+#         with torch.no_grad():
+#             inputs       = processor(images=image_pil, return_tensors="pt").to(device)
+#             outputs      = model(**inputs)
+#             target_sizes = torch.tensor([[img_h, img_w]]).to(device)
+#             results      = processor.post_process_object_detection(
+#                 outputs=outputs,
+#                 threshold=CONFIDENCE_THRESHOLD,
+#                 target_sizes=target_sizes,
+#             )[0]
+
+#         # Step 3: parse detections
+#         detections = []
+#         for score, label, box in zip(
+#             results["scores"], results["labels"], results["boxes"]
+#         ):
+#             x1, y1, x2, y2 = [int(v) for v in box.tolist()]
+#             x1, y1 = max(0, x1), max(0, y1)
+#             x2, y2 = min(img_w, x2), min(img_h, y2)
+#             detections.append({
+#                 "confidence":  round(float(score), 4),
+#                 "bbox":        [x1, y1, x2, y2],
+#                 "area_pixels": (x2 - x1) * (y2 - y1),
+#             })
+
+
+#         if not detections:
+#             return {
+#                 "error": (
+#                     f"No roof detected at ({latitude}, {longitude}). "
+#                     f"Try lowering CONFIDENCE_THRESHOLD "
+#                     f"(currently {CONFIDENCE_THRESHOLD}) or use zoom=19."
+#                 )
+#             }
+
+#         # Step 4: pick roof nearest to image center (= input coordinates)
+#         nearest = _nearest_to_center(detections, img_w, img_h)
+
+
+#         # Step 5: convert to real-world values
+#         area_sqm = _bbox_to_sqm(nearest["bbox"], latitude)
+#         geo_poly = _bbox_to_geo_polygon(
+#             nearest["bbox"], latitude, longitude, (img_w, img_h)
+#         )
+
+
+#         return {
+#             # Same keys as original OSMnx function
+#             "geometry":  geo_poly,      # list of (lat,lon) corners
+#             "building":  "detected",
+#             "name":      "Unknown",
+#             "levels":    1,
+#             # New fields
+#             "area_sqm":  area_sqm,
+#             "confidence": nearest["confidence"],
+#             "bbox":       nearest["bbox"],
+#             "image_path": image_path,
+#             "distance_from_center_px": nearest["distance_from_center_px"],
+#             "all_roofs_detected": len(detections),
+#         }
+
+#     except Exception as e:
+#         return {"error": f"Detection failed: {e}"}
+
+
+
+HF_TOKEN = os.getenv("HF_TOKEN")
+
+HF_API_URL = (
+    "https://api-inference.huggingface.co/models/"
+    "Yifeng-Liu/rt-detr-finetuned-for-satellite-image-roofs-detection"
+)
+
+HF_HEADERS = {
+    "Authorization": f"Bearer {HF_TOKEN}"
+}
+
+
 def fetch_building_footprint(latitude: float, longitude: float) -> dict:
     """
-    Replaces the original OSMnx fetch_building_footprint().
-
-    Old: OSMnx → OpenStreetMap polygon (fails in India tier-2+)
-    New: Google Maps satellite → RT-DETR model → nearest roof to center
-
-    Returns same keys as original so rest of pipeline is unchanged:
-      geometry  → list of (lat,lon) corner tuples
-      building  → "detected"
-      name      → "Unknown"
-      levels    → 1
-      area_sqm  → real-world area in m²  [NEW]
-      confidence→ model confidence        [NEW]
-      image_path→ saved satellite PNG     [NEW]
+    Google satellite → HuggingFace RT-DETR inference API
     """
+
     image_path = None
 
     try:
-        # Step 1: fetch satellite image
+        # =========================================================
+        # STEP 1: FETCH SATELLITE IMAGE
+        # =========================================================
         image_path = _fetch_satellite(latitude, longitude)
 
-        # Step 2: load model + run detection
-        model, processor, device = _load_model()
+        image_cv = cv2.imread(image_path)
 
-        image_cv  = cv2.imread(image_path)
-        image_pil = Image.open(image_path).convert("RGB")
+        if image_cv is None:
+            return {"error": "Failed to read satellite image."}
+
         img_h, img_w = image_cv.shape[:2]
 
+        # =========================================================
+        # STEP 2: CALL HUGGINGFACE INFERENCE API
+        # =========================================================
+        with open(image_path, "rb") as f:
+            image_bytes = f.read()
 
-        with torch.no_grad():
-            inputs       = processor(images=image_pil, return_tensors="pt").to(device)
-            outputs      = model(**inputs)
-            target_sizes = torch.tensor([[img_h, img_w]]).to(device)
-            results      = processor.post_process_object_detection(
-                outputs=outputs,
-                threshold=CONFIDENCE_THRESHOLD,
-                target_sizes=target_sizes,
-            )[0]
+        response = requests.post(
+            HF_API_URL,
+            headers=HF_HEADERS,
+            data=image_bytes,
+            timeout=60
+        )
 
-        # Step 3: parse detections
+        if response.status_code != 200:
+            return {
+                "error": f"HuggingFace API failed: {response.text}"
+            }
+
+        results = response.json()
+
+        # =========================================================
+        # STEP 3: PARSE DETECTIONS
+        # =========================================================
         detections = []
-        for score, label, box in zip(
-            results["scores"], results["labels"], results["boxes"]
-        ):
-            x1, y1, x2, y2 = [int(v) for v in box.tolist()]
+
+        for item in results:
+
+            score = item.get("score", 0)
+
+            if score < CONFIDENCE_THRESHOLD:
+                continue
+
+            box = item["box"]
+
+            x1 = int(box["xmin"])
+            y1 = int(box["ymin"])
+            x2 = int(box["xmax"])
+            y2 = int(box["ymax"])
+
             x1, y1 = max(0, x1), max(0, y1)
             x2, y2 = min(img_w, x2), min(img_h, y2)
+
             detections.append({
-                "confidence":  round(float(score), 4),
-                "bbox":        [x1, y1, x2, y2],
+                "confidence": round(float(score), 4),
+                "bbox": [x1, y1, x2, y2],
                 "area_pixels": (x2 - x1) * (y2 - y1),
             })
 
-
+        # =========================================================
+        # STEP 4: HANDLE NO DETECTION
+        # =========================================================
         if not detections:
             return {
                 "error": (
                     f"No roof detected at ({latitude}, {longitude}). "
-                    f"Try lowering CONFIDENCE_THRESHOLD "
-                    f"(currently {CONFIDENCE_THRESHOLD}) or use zoom=19."
+                    f"Try lowering CONFIDENCE_THRESHOLD."
                 )
             }
 
-        # Step 4: pick roof nearest to image center (= input coordinates)
-        nearest = _nearest_to_center(detections, img_w, img_h)
-
-
-        # Step 5: convert to real-world values
-        area_sqm = _bbox_to_sqm(nearest["bbox"], latitude)
-        geo_poly = _bbox_to_geo_polygon(
-            nearest["bbox"], latitude, longitude, (img_w, img_h)
+        # =========================================================
+        # STEP 5: PICK NEAREST ROOF
+        # =========================================================
+        nearest = _nearest_to_center(
+            detections,
+            img_w,
+            img_h
         )
 
+        # =========================================================
+        # STEP 6: CONVERT TO REAL WORLD VALUES
+        # =========================================================
+        area_sqm = _bbox_to_sqm(
+            nearest["bbox"],
+            latitude
+        )
 
+        geo_poly = _bbox_to_geo_polygon(
+            nearest["bbox"],
+            latitude,
+            longitude,
+            (img_w, img_h)
+        )
+
+        # =========================================================
+        # STEP 7: RETURN
+        # =========================================================
         return {
-            # Same keys as original OSMnx function
-            "geometry":  geo_poly,      # list of (lat,lon) corners
-            "building":  "detected",
-            "name":      "Unknown",
-            "levels":    1,
-            # New fields
-            "area_sqm":  area_sqm,
+            "geometry": geo_poly,
+            "building": "detected",
+            "name": "Unknown",
+            "levels": 1,
+
+            "area_sqm": area_sqm,
             "confidence": nearest["confidence"],
-            "bbox":       nearest["bbox"],
+            "bbox": nearest["bbox"],
             "image_path": image_path,
-            "distance_from_center_px": nearest["distance_from_center_px"],
-            "all_roofs_detected": len(detections),
+
+            "distance_from_center_px":
+                nearest["distance_from_center_px"],
+
+            "all_roofs_detected":
+                len(detections),
         }
 
     except Exception as e:
-        return {"error": f"Detection failed: {e}"}
+
+        return {
+            "error": f"Detection failed: {e}"
+        }
 
 
 # =========================================================
